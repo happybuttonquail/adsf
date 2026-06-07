@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>🐠 바다 물고기 잡기</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Jua', sans-serif; background: #0a0e1a; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    @media (orientation: portrait) {
+      body::before { content: '📱 화면을 가로로 돌려주세요!'; position: fixed; inset: 0; z-index: 9999; background: #0a0e1a; color: #90caf9; font-family: 'Jua', sans-serif; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    }
+    .screen { display: none; width: 100%; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* 시작화면 */
+    #startScreen { align-items: center; justify-content: center; background: linear-gradient(180deg,#001220,#003355 50%,#001a33); }
+    .start-box { text-align: center; padding: 40px 30px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); max-width: 340px; width: 90%; }
+    .start-box h1 { font-size: 2rem; color: #90caf9; margin-bottom: 6px; }
+    .start-box p  { color: #78909c; font-size: 0.95rem; margin-bottom: 30px; }
+    .start-btns   { display: flex; gap: 14px; justify-content: center; }
+    .start-btn { padding: 14px 28px; border: none; border-radius: 14px; font-family: 'Jua', sans-serif; font-size: 1.1rem; cursor: pointer; transition: transform 0.15s, filter 0.15s; }
+    .start-btn:hover { transform: scale(1.06); filter: brightness(1.12); }
+    .btn-admin  { background: linear-gradient(135deg,#b71c1c,#e53935); color: white; }
+    .btn-player { background: linear-gradient(135deg,#1565c0,#42a5f5); color: white; }
+
+    /* 로그인/이름 공통 */
+    #loginScreen, #nameScreen { align-items: center; justify-content: center; background: linear-gradient(180deg,#001220,#003355 50%,#001a33); }
+    .login-box { padding: 36px 28px; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .login-box h2 { color: #90caf9; margin-bottom: 20px; font-size: 1.4rem; }
+    .login-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(255,255,255,0.07); color: #e0e0e0; font-family: 'Jua', sans-serif; font-size: 1rem; outline: none; text-align: center; }
+    .login-input:focus { border-color: #42a5f5; }
+    .login-submit { width: 100%; padding: 13px; border: none; border-radius: 12px; background: linear-gradient(135deg,#1565c0,#42a5f5); color: white; font-family: 'Jua', sans-serif; font-size: 1.05rem; cursor: pointer; margin-top: 4px; }
+    .login-back { margin-top: 12px; background: none; border: none; color: #78909c; font-family: 'Jua', sans-serif; font-size: 0.9rem; cursor: pointer; }
+    .login-err { color: #ef9a9a; font-size: 0.88rem; margin-top: 6px; min-height: 1.2em; }
+
+    /* 나가기/로그아웃 버튼 */
+    .back-btn { position: fixed; top: 12px; left: 12px; z-index: 500; padding: 8px 14px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #e0e0e0; font-family: 'Jua', sans-serif; font-size: 0.9rem; cursor: pointer; }
+    .back-btn:hover { background: rgba(255,255,255,0.15); }
+    .logout-btn { display: none; position: fixed; top: 12px; right: 12px; z-index: 500; padding: 8px 14px; background: rgba(183,28,28,0.3); border: 1px solid rgba(239,154,154,0.3); border-radius: 10px; color: #ef9a9a; font-family: 'Jua', sans-serif; font-size: 0.9rem; cursor: pointer; }
+    .logout-btn:hover { background: rgba(183,28,28,0.5); }
+    .logout-btn.visible { display: block; }
+
+    /* Admin 화면 */
+    #adminScreen { background: linear-gradient(180deg,#0a0e1a,#0d1b2a); padding: 14px; padding-top: 52px; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; }
+    .admin-header h2 { color: #ef9a9a; font-size: 1.2rem; }
+    .admin-header-btns { display: flex; gap: 8px; }
+    .icon-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 1.2rem; transition: background 0.15s; }
+    .icon-btn:hover { background: rgba(255,255,255,0.15); }
+    .admin-panels { display: flex; gap: 12px; flex: 1; }
+    .admin-panel { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 14px; overflow-y: auto; }
+    .admin-panel h3 { color: #90caf9; margin-bottom: 10px; font-size: 1rem; }
+    .make-room-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg,#2e7d32,#66bb6a); color: white; font-family: 'Jua', sans-serif; font-size: 1rem; cursor: pointer; margin-bottom: 10px; }
+    .room-item { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+    .room-item span { color: #e0e0e0; font-size: 0.9rem; }
+    .room-open-badge { background: #2e7d32; color: white; font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; }
+    .player-item { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+    .player-item span { color: #e0e0e0; font-size: 0.9rem; }
+    .player-actions { display: flex; gap: 6px; }
+    .player-action-btn { background: rgba(255,255,255,0.1); border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 1rem; }
+    .player-action-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* 게임 화면 */
+    #gameScreen { background: linear-gradient(180deg,#0a0e1a,#0d1b2a); padding: 10px; padding-top: 52px; }
+    .game-header { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 10px 14px; margin-bottom: 10px; }
+    .game-header-left { display: flex; flex-direction: column; }
+    .player-name-label { color: #90caf9; font-size: 0.85rem; }
+    .coin-display { color: #ffd54f; font-size: 1.1rem; }
+    .view-toggle { display: flex; gap: 8px; }
+    .view-btn { padding: 8px 14px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; background: rgba(255,255,255,0.06); color: #e0e0e0; font-family: 'Jua', sans-serif; font-size: 0.88rem; cursor: pointer; }
+    .view-btn.active { background: #1565c0; border-color: #42a5f5; color: white; }
+    .shop-btn { padding: 8px 14px; border: none; border-radius: 10px; background: linear-gradient(135deg,#f57f17,#ffd54f); color: #0a0e1a; font-family: 'Jua', sans-serif; font-size: 0.88rem; cursor: pointer; }
+
+    /* 바다/수족관 */
+    #oceanView { flex: 1; position: relative; overflow: hidden; border-radius: 18px; border: 2px solid rgba(255,255,255,0.08); background: linear-gradient(180deg,#002244,#004488 30%,#006699 70%,#001a33); min-height: 340px; margin-bottom: 10px; }
+    #oceanView::before { content:''; position:absolute; inset:0; pointer-events:none; background: repeating-linear-gradient(85deg,transparent,transparent 60px,rgba(255,255,255,0.03) 60px,rgba(255,255,255,0.03) 62px); }
+    .ocean-floor { position:absolute; bottom:0; left:0; right:0; height:28px; background:linear-gradient(180deg,#8d6e63,#5d4037); border-radius:0 0 16px 16px; }
+    .ocean-bubble { position:absolute; border-radius:50%; background:rgba(255,255,255,0.18); animation:rise linear infinite; }
+    @keyframes rise { 0%{bottom:-16px;opacity:0.6} 100%{bottom:110%;opacity:0} }
+    .ocean-coral { position:absolute; bottom:28px; width:12px; background:#e53935; border-radius:50% 50% 0 0; transform-origin:bottom center; animation:sway 3s ease-in-out infinite; }
+    @keyframes sway { 0%,100%{transform:rotate(-10deg)} 50%{transform:rotate(10deg)} }
+    .ocean-fish { position:absolute; cursor:pointer; user-select:none; }
+    .ocean-fish:hover { filter:brightness(1.4) drop-shadow(0 0 6px rgba(255,255,200,0.8)); }
+    .grade-badge { position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:0.65rem; padding:2px 6px; border-radius:8px; white-space:nowrap; font-family:'Jua',sans-serif; pointer-events:none; }
+    .badge-common{background:#616161;color:white} .badge-uncommon{background:#2e7d32;color:white}
+    .badge-rare{background:#1565c0;color:white} .badge-secret{background:#6a1b9a;color:#ffd54f}
+    .coin-pop { position:absolute; color:#ffd54f; font-family:'Jua',sans-serif; font-size:0.85rem; pointer-events:none; z-index:10; animation:popUp 1.2s ease-out forwards; }
+    @keyframes popUp { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-40px)} }
+    #tankView { display:none; flex:1; position:relative; overflow:hidden; border-radius:18px; border:2px solid rgba(255,255,255,0.08); background:linear-gradient(180deg,#0288d1,#01579b 65%,#1a237e); min-height:340px; margin-bottom:10px; }
+    .tank-sand { position:absolute; bottom:0; left:0; right:0; height:22px; background:linear-gradient(180deg,#f9a825,#e65100); border-radius:0 0 16px 16px; }
+    .tank-seaweed { position:absolute; bottom:22px; width:10px; background:#2e7d32; border-radius:50% 50% 0 0; transform-origin:bottom center; animation:sway 3s ease-in-out infinite; }
+    .tank-bubble { position:absolute; border-radius:50%; background:rgba(255,255,255,0.25); animation:rise linear infinite; }
+    .tank-empty { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:rgba(255,255,255,0.3); font-size:0.95rem; text-align:center; }
+
+    /* 물고기 CSS */
+    .fish { position:absolute; }
+    .fish-anchovy .body { width:32px; height:9px; background:linear-gradient(90deg,#e0e0e0,#bdbdbd); border-radius:50% 60% 60% 50%; position:relative; }
+    .fish-anchovy .tail { position:absolute; right:-9px; top:-4px; border-top:8px solid transparent; border-bottom:8px solid transparent; border-left:11px solid #9e9e9e; }
+    .fish-anchovy .eye { position:absolute; left:4px; top:1px; width:4px; height:4px; background:#333; border-radius:50%; }
+    .fish-mackerel .body { width:54px; height:20px; background:linear-gradient(90deg,#64b5f6,#1976d2); border-radius:50% 55% 55% 50%; position:relative; overflow:hidden; }
+    .fish-mackerel .stripe { position:absolute; top:5px; left:0; right:0; height:3px; background:rgba(13,71,161,0.45); box-shadow:0 6px 0 rgba(13,71,161,0.35); }
+    .fish-mackerel .tail { position:absolute; right:-14px; top:-6px; border-top:16px solid transparent; border-bottom:16px solid transparent; border-left:16px solid #1565c0; }
+    .fish-mackerel .eye { position:absolute; left:7px; top:4px; width:6px; height:6px; background:#111; border-radius:50%; border:1.5px solid white; }
+    .fish-goldfish .body { width:44px; height:34px; background:radial-gradient(circle at 38% 38%,#ffcc80,#e64a19); border-radius:50%; position:relative; }
+    .fish-goldfish .tail { position:absolute; right:-20px; top:-9px; border-top:26px solid transparent; border-bottom:26px solid transparent; border-left:24px solid #ff7043; }
+    .fish-goldfish .fin { position:absolute; top:-11px; left:16px; width:14px; height:13px; background:#ff8a65; border-radius:50% 50% 0 0; }
+    .fish-goldfish .eye { position:absolute; left:8px; top:10px; width:8px; height:8px; background:#111; border-radius:50%; border:2px solid white; }
+    .fish-whaleshark .body { width:92px; height:42px; background:#546e7a; border-radius:50% 40% 40% 50%; position:relative; overflow:hidden; }
+    .fish-whaleshark .body::before { content:''; position:absolute; inset:0; background:radial-gradient(circle 5px at 18px 14px,#90a4ae 50%,transparent 50%),radial-gradient(circle 4px at 38px 8px,#90a4ae 50%,transparent 50%),radial-gradient(circle 5px at 58px 18px,#90a4ae 50%,transparent 50%),radial-gradient(circle 4px at 28px 30px,#90a4ae 50%,transparent 50%),radial-gradient(circle 4px at 50px 34px,#90a4ae 50%,transparent 50%); }
+    .fish-whaleshark .tail { position:absolute; right:-24px; top:-11px; border-top:32px solid transparent; border-bottom:32px solid transparent; border-left:27px solid #455a64; }
+    .fish-whaleshark .fin { position:absolute; top:-17px; left:26px; width:22px; height:19px; background:#455a64; border-radius:50% 50% 0 0; }
+    .fish-whaleshark .eye { position:absolute; left:11px; top:13px; width:10px; height:10px; background:#111; border-radius:50%; border:2px solid white; }
+
+    /* 퀴즈 팝업 */
+    .quiz-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:50; align-items:center; justify-content:center; }
+    .quiz-overlay.open { display:flex; }
+    .quiz-box { background:#0d1b2a; border:1px solid rgba(255,255,255,0.12); border-radius:22px; padding:28px 24px; width:90%; max-width:360px; text-align:center; }
+    .quiz-grade { font-size:0.85rem; padding:4px 12px; border-radius:20px; display:inline-block; margin-bottom:10px; }
+    .quiz-fish-preview { font-size:2.5rem; margin-bottom:6px; }
+    .quiz-name { color:#90caf9; font-size:1.1rem; margin-bottom:4px; }
+    .quiz-cost { color:#ffd54f; font-size:0.9rem; margin-bottom:16px; }
+    .quiz-problem { font-size:1.6rem; color:#e0e0e0; margin-bottom:16px; background:rgba(255,255,255,0.05); border-radius:12px; padding:12px; }
+    .quiz-input { width:100%; padding:12px; border:2px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:1.2rem; outline:none; text-align:center; margin-bottom:10px; }
+    .quiz-input:focus { border-color:#42a5f5; }
+    .quiz-btns { display:flex; gap:10px; }
+    .quiz-submit { flex:1; padding:12px; border:none; border-radius:12px; background:linear-gradient(135deg,#1565c0,#42a5f5); color:white; font-family:'Jua',sans-serif; font-size:1rem; cursor:pointer; }
+    .quiz-cancel { padding:12px 18px; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:1rem; cursor:pointer; }
+    .quiz-feedback { margin-top:10px; font-size:0.95rem; min-height:1.3em; }
+    .quiz-feedback.ok{color:#a5d6a7} .quiz-feedback.err{color:#ef9a9a}
+
+    /* 모달 공통 */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:#0d1b2a; border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:24px; width:90%; max-width:380px; max-height:80vh; overflow-y:auto; }
+    .modal-box h3 { color:#90caf9; margin-bottom:14px; }
+    .modal-close { float:right; background:none; border:none; color:#78909c; font-size:1.3rem; cursor:pointer; }
+    .search-input { width:100%; padding:10px; border:2px solid rgba(255,255,255,0.15); border-radius:10px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.95rem; outline:none; margin-bottom:12px; }
+    .search-result-item { background:rgba(255,255,255,0.06); border-radius:10px; padding:10px 12px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; }
+    .search-result-item span { color:#e0e0e0; font-size:0.9rem; }
+    .msg-textarea { width:100%; height:90px; padding:10px; border:2px solid rgba(255,255,255,0.15); border-radius:10px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.95rem; outline:none; resize:none; margin-bottom:10px; }
+    .msg-send-btn { width:100%; padding:11px; border:none; border-radius:10px; background:linear-gradient(135deg,#1565c0,#42a5f5); color:white; font-family:'Jua',sans-serif; font-size:1rem; cursor:pointer; }
+    .gift-row { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+    .gift-input { flex:1; padding:10px; border:2px solid rgba(255,255,255,0.15); border-radius:10px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.95rem; outline:none; text-align:center; }
+    .gift-label { color:#ffd54f; font-size:0.9rem; white-space:nowrap; }
+    .gift-btn { width:100%; padding:11px; border:none; border-radius:10px; background:linear-gradient(135deg,#f57f17,#ffd54f); color:#0a0e1a; font-family:'Jua',sans-serif; font-size:1rem; cursor:pointer; margin-bottom:8px; }
+    .gift-fish-list { margin-top:10px; }
+    .gift-fish-btn { width:100%; padding:10px; border:none; border-radius:10px; background:rgba(255,255,255,0.08); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.9rem; cursor:pointer; margin-bottom:6px; border:1px solid rgba(255,255,255,0.1); text-align:left; }
+    .gift-fish-btn:hover { background:rgba(255,255,255,0.15); }
+
+    /* 상점 */
+    .shop-item-card { background:rgba(255,255,255,0.06); border-radius:12px; padding:12px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.08); }
+    .shop-item-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .shop-item-name { color:#e0e0e0; font-size:0.95rem; }
+    .shop-item-level { color:#ffd54f; font-size:0.82rem; }
+    .shop-level-btn { padding:8px 14px; border:none; border-radius:8px; background:linear-gradient(135deg,#6a1b9a,#ab47bc); color:white; font-family:'Jua',sans-serif; font-size:0.85rem; cursor:pointer; }
+    .shop-level-btn:disabled { background:rgba(255,255,255,0.1); color:#546e7a; cursor:not-allowed; }
+    .shop-no-fish { color:#546e7a; font-size:0.9rem; text-align:center; padding:20px 0; }
+
+    /* 메세지 수신함 */
+    .msg-inbox { position:fixed; bottom:20px; right:16px; z-index:200; display:flex; flex-direction:column; gap:8px; max-width:280px; }
+    .msg-card { background:#0d1b2a; border:1px solid rgba(144,202,249,0.3); border-radius:16px; padding:14px; box-shadow:0 4px 20px rgba(0,0,0,0.5); animation:slideIn 0.3s ease; }
+    @keyframes slideIn { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+    .msg-from { color:#ef9a9a; font-size:0.8rem; margin-bottom:4px; }
+    .msg-body { color:#e0e0e0; font-size:0.9rem; margin-bottom:10px; }
+    .msg-card-btns { display:flex; gap:8px; }
+    .msg-close-btn { flex:1; padding:7px; border:1px solid rgba(255,255,255,0.15); border-radius:8px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.85rem; cursor:pointer; }
+    .msg-reply-btn { flex:1; padding:7px; border:none; border-radius:8px; background:#1565c0; color:white; font-family:'Jua',sans-serif; font-size:0.85rem; cursor:pointer; }
+    .msg-reply-area { display:none; margin-top:8px; }
+    .msg-reply-input { width:100%; padding:8px; border:2px solid rgba(255,255,255,0.15); border-radius:8px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.85rem; outline:none; margin-bottom:6px; resize:none; height:60px; }
+    .msg-reply-send { width:100%; padding:8px; border:none; border-radius:8px; background:#42a5f5; color:white; font-family:'Jua',sans-serif; font-size:0.85rem; cursor:pointer; }
+    .gift-notif { background:#0d1b2a; border:1px solid rgba(255,213,79,0.4); border-radius:16px; padding:14px; box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+    .gift-notif-title { color:#ffd54f; font-size:0.85rem; margin-bottom:4px; }
+    .gift-notif-body  { color:#e0e0e0; font-size:0.9rem; margin-bottom:8px; }
+    .gift-notif-close { width:100%; padding:7px; border:none; border-radius:8px; background:rgba(255,213,79,0.15); color:#ffd54f; font-family:'Jua',sans-serif; font-size:0.85rem; cursor:pointer; }
+
+    /* 댓글 */
+    .comment-list { max-height:260px; overflow-y:auto; margin-bottom:14px; display:flex; flex-direction:column; gap:8px; }
+    .comment-item { background:rgba(255,255,255,0.06); border-radius:10px; padding:10px 12px; border:1px solid rgba(255,255,255,0.08); position:relative; }
+    .comment-author { color:#90caf9; font-size:0.8rem; margin-bottom:3px; }
+    .comment-text   { color:#e0e0e0; font-size:0.9rem; word-break:break-all; }
+    .comment-delete { position:absolute; top:8px; right:8px; background:none; border:none; color:#ef9a9a; font-size:0.85rem; cursor:pointer; display:none; }
+    .comment-delete.visible { display:block; }
+    .comment-input-row { display:flex; gap:8px; }
+    .comment-input { flex:1; padding:10px; border:2px solid rgba(255,255,255,0.15); border-radius:10px; background:rgba(255,255,255,0.07); color:#e0e0e0; font-family:'Jua',sans-serif; font-size:0.95rem; outline:none; }
+    .comment-input:focus { border-color:#42a5f5; }
+    .comment-send { padding:10px 16px; border:none; border-radius:10px; background:#1565c0; color:white; font-family:'Jua',sans-serif; font-size:0.9rem; cursor:pointer; }
+    .comment-no { color:#546e7a; font-size:0.9rem; text-align:center; padding:16px 0; }
+
+    /* QR 모달 */
+    .qr-modal-box { background:#0d1b2a; border:1px solid rgba(255,255,255,0.12); border-radius:20px; padding:28px 24px; width:90%; max-width:320px; text-align:center; }
+    .qr-modal-box h3 { color:#90caf9; margin-bottom:6px; }
+    .qr-modal-box p  { color:#78909c; font-size:0.85rem; margin-bottom:18px; }
+
+    /* 토스트 */
+    .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-70px); background:rgba(0,0,0,0.85); color:white; padding:10px 26px; border-radius:22px; font-size:1rem; transition:transform 0.3s; z-index:999; pointer-events:none; }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+
+    @media (max-width:600px) {
+      .admin-panels { flex-direction:column; }
+      #oceanView,#tankView { min-height:260px; }
+      .quiz-problem { font-size:1.3rem; }
+    }
+  </style>
+</head>
+<body>
+<button class="logout-btn" id="logoutBtn" onclick="doLogout()">🚪 로그아웃</button>
+
+<!-- 시작 화면 -->
+<div id="startScreen" class="screen active">
+  <div class="start-box">
+    <h1>🐠 바다 물고기 잡기</h1>
+    <p>물고기를 잡고 수족관을 채워봐요!</p>
+    <div class="start-btns">
+      <button class="start-btn btn-admin"  onclick="showScreen('loginScreen')">👑 Admin</button>
+      <button class="start-btn btn-player" onclick="showScreen('nameScreen')">🎮 Player</button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+      <button class="start-btn" id="commentBtn" style="background:rgba(255,255,255,0.08);color:#a5d6a7;border:1px solid rgba(255,255,255,0.15);font-size:0.95rem;padding:10px 22px;">💬 댓글</button>
+      <button class="start-btn" onclick="if(myName){startGame();}else{showScreen('nameScreen');}" style="background:linear-gradient(135deg,#1b5e20,#43a047);color:white;font-size:0.95rem;padding:10px 22px;">▶ Play</button>
+    </div>
+    <div style="margin-top:16px;">
+      <div style="color:#78909c;font-size:0.78rem;margin-bottom:6px;">📱 QR 찍으면 바로 입장!</div>
+      <div id="qrInner" style="display:inline-block;border-radius:10px;overflow:hidden;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin 로그인 -->
+<div id="loginScreen" class="screen">
+  <button class="back-btn" onclick="goMain()">← 나가기</button>
+  <div class="login-box">
+    <h2>👑 Admin 로그인</h2>
+    <input class="login-input" id="adminId" type="text" placeholder="아이디">
+    <input class="login-input" id="adminPw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter') tryAdminLogin()">
+    <button class="login-submit" onclick="tryAdminLogin()">로그인</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- Player 이름 입력 -->
+<div id="nameScreen" class="screen">
+  <button class="back-btn" onclick="goMain()">← 나가기</button>
+  <div class="login-box">
+    <h2>🎮 이름 입력</h2>
+    <input class="login-input" id="playerNameInput" type="text" placeholder="닉네임" onkeydown="if(event.key==='Enter') tryPlayerJoin()">
+    <button class="login-submit" onclick="tryPlayerJoin()">입장하기</button>
+    <div class="login-err" id="nameErr"></div>
+  </div>
+</div>
+
+<!-- Admin 화면 -->
+<div id="adminScreen" class="screen">
+  <button class="back-btn" onclick="goMain()">← 나가기</button>
+  <div class="admin-header">
+    <h2>👑 Admin 패널</h2>
+    <div class="admin-header-btns">
+      <button class="icon-btn" onclick="openCamera()" title="플레이어 검색">📷</button>
+      <button class="icon-btn" onclick="openModal('summonModal')" title="물고기 소환">🎣</button>
+    </div>
+  </div>
+  <div class="admin-panels">
+    <div class="admin-panel">
+      <h3>👥 접속 중인 플레이어</h3>
+      <button class="make-room-btn" style="background:linear-gradient(135deg,#b71c1c,#e53935);margin-bottom:10px;" onclick="resetAllPlayers()">🗑️ 전체 플레이어 초기화</button>
+      <div id="playerList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 게임 화면 -->
+<div id="gameScreen" class="screen">
+  <button class="back-btn" onclick="goMain()">← 나가기</button>
+  <div class="game-header">
+    <div class="game-header-left">
+      <span class="player-name-label" id="playerNameLabel">플레이어</span>
+      <span class="coin-display" id="coinDisplay">💰 0 코인</span>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btnOcean" onclick="switchView('ocean')">🌊 바다</button>
+      <button class="view-btn" id="btnTank" onclick="switchView('tank')">🐠 수족관</button>
+      <button class="shop-btn" onclick="openShop()">🛒 상점</button>
+    </div>
+  </div>
+  <div id="oceanView"><div class="ocean-floor"></div></div>
+  <div id="tankView">
+    <div class="tank-sand"></div>
+    <div class="tank-empty" id="tankEmpty">아직 물고기가 없어요!<br>바다에서 잡아오세요 🎣</div>
+  </div>
+</div>
+
+<!-- 퀴즈 팝업 -->
+<div class="quiz-overlay" id="quizOverlay">
+  <div class="quiz-box">
+    <div class="quiz-grade" id="quizGrade"></div>
+    <div class="quiz-fish-preview" id="quizFishEmoji"></div>
+    <div class="quiz-name" id="quizFishName"></div>
+    <div class="quiz-cost" id="quizCost"></div>
+    <div class="quiz-problem" id="quizProblem"></div>
+    <input class="quiz-input" id="quizInput" type="number" placeholder="답 입력" onkeydown="if(event.key==='Enter') submitQuiz()">
+    <div class="quiz-btns">
+      <button class="quiz-submit" onclick="submitQuiz()">제출</button>
+      <button class="quiz-cancel" onclick="closeQuiz()">취소</button>
+    </div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+  </div>
+</div>
+
+<!-- 카메라 모달 -->
+<div class="modal-overlay" id="cameraModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('cameraModal')">✕</button>
+    <h3>📷 플레이어 검색</h3>
+    <input class="search-input" id="searchInput" placeholder="이름 검색..." oninput="renderSearchResults()">
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- 메세지 모달 -->
+<div class="modal-overlay" id="msgModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('msgModal')">✕</button>
+    <h3>⌨ 메세지 → <span id="msgTarget"></span></h3>
+    <textarea class="msg-textarea" id="msgText" placeholder="메세지를 입력하세요..."></textarea>
+    <button class="msg-send-btn" onclick="sendMessage()">보내기</button>
+  </div>
+</div>
+
+<!-- 선물 모달 -->
+<div class="modal-overlay" id="giftModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('giftModal')">✕</button>
+    <h3>🎁 선물하기 → <span id="giftTarget"></span></h3>
+    <div class="gift-row">
+      <input class="gift-input" id="giftCoinAmount" type="number" placeholder="코인 수" min="1">
+      <span class="gift-label">💰 코인</span>
+    </div>
+    <button class="gift-btn" onclick="sendGiftCoin()">코인 선물하기</button>
+    <div class="gift-fish-list">
+      <div style="color:#90caf9;font-size:0.9rem;margin-bottom:8px;">🐠 물고기 선물 / 레벨업</div>
+      <button class="gift-fish-btn" onclick="sendGiftFish('common')"  style="border-left:3px solid #9e9e9e;">🐟 멸치 선물 (일반)</button>
+      <button class="gift-fish-btn" onclick="sendGiftFish('uncommon')" style="border-left:3px solid #4caf50;">🐡 고등어 선물 (희귀)</button>
+      <button class="gift-fish-btn" onclick="sendGiftFish('rare')"    style="border-left:3px solid #2196f3;">🐠 금붕어 선물 (레어)</button>
+      <button class="gift-fish-btn" onclick="sendGiftFish('secret')"  style="border-left:3px solid #9c27b0;">🦈 고래상어 선물 (시크릿)</button>
+      <div style="color:#90caf9;font-size:0.85rem;margin:10px 0 6px;">⬆️ 레벨업 선물</div>
+      <button class="gift-fish-btn" onclick="giftLevelUp('common')"  style="border-left:3px solid #ffd54f;">⬆️ 멸치 레벨업</button>
+      <button class="gift-fish-btn" onclick="giftLevelUp('uncommon')" style="border-left:3px solid #ffd54f;">⬆️ 고등어 레벨업</button>
+      <button class="gift-fish-btn" onclick="giftLevelUp('rare')"    style="border-left:3px solid #ffd54f;">⬆️ 금붕어 레벨업</button>
+      <button class="gift-fish-btn" onclick="giftLevelUp('secret')"  style="border-left:3px solid #ffd54f;">⬆️ 고래상어 레벨업</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상점 모달 -->
+<div class="modal-overlay" id="shopModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('shopModal')">✕</button>
+    <h3>🛒 상점 - 레벨업</h3>
+    <div style="color:#78909c;font-size:0.82rem;margin-bottom:12px;">레벨업하면 코인을 더 빠르게 모아요! (+2코인/레벨)</div>
+    <div id="shopList"></div>
+  </div>
+</div>
+
+<!-- 소환 모달 -->
+<div class="modal-overlay" id="summonModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('summonModal')">✕</button>
+    <h3>🎣 물고기 소환</h3>
+    <div style="color:#78909c;font-size:0.85rem;margin-bottom:14px;">플레이어 바다에 물고기를 소환해요!</div>
+    <input class="search-input" id="summonPlayerName" placeholder="플레이어 이름 입력">
+    <div style="color:#90caf9;font-size:0.88rem;margin-bottom:8px;">등급 선택</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="gift-fish-btn" onclick="adminSummon('common')"   style="border-left:3px solid #9e9e9e;">🐟 일반 (멸치)</button>
+      <button class="gift-fish-btn" onclick="adminSummon('uncommon')" style="border-left:3px solid #4caf50;">🐡 희귀 (고등어)</button>
+      <button class="gift-fish-btn" onclick="adminSummon('rare')"     style="border-left:3px solid #2196f3;">🐠 레어 (금붕어)</button>
+      <button class="gift-fish-btn" onclick="adminSummon('secret')"   style="border-left:3px solid #9c27b0;">🦈 시크릿 (고래상어)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 댓글 모달 -->
+<div class="modal-overlay" id="commentModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('commentModal')">✕</button>
+    <h3>💬 댓글</h3>
+    <div id="commentLoginView">
+      <div style="text-align:center;color:#e0e0e0;font-size:1.1rem;margin:16px 0 20px;">로그인</div>
+      <div style="display:flex;gap:10px;">
+        <button class="login-submit" style="background:linear-gradient(135deg,#b71c1c,#e53935);" onclick="commentGoAdmin()">👑 Admin</button>
+        <button class="login-submit" style="background:linear-gradient(135deg,#1565c0,#42a5f5);" onclick="commentGoPlayer()">🎮 Player</button>
+      </div>
+    </div>
+    <div id="commentMainView" style="display:none;">
+      <div class="comment-list" id="commentList"></div>
+      <div class="comment-input-row">
+        <input class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." onkeydown="if(event.key==='Enter') postComment()">
+        <button class="comment-send" onclick="postComment()">작성</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="msg-inbox" id="msgInbox"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+//  CONFIG
+// ════════════════════════════════
+const ADMIN_ID  = '오레망';
+const ADMIN_PW  = 'Abcd01097852174!';
+const NETLIFY_URL = 'https://happybuttonquail.github.io/-/';
+
+const GRADES = {
+  common:   { name:'멸치',    label:'일반',   emoji:'🐟', cssClass:'anchovy',   w:42,  h:17, cost:10,  spawnWeight:70, autoSec:5, autoCoin:1 },
+  uncommon: { name:'고등어',  label:'희귀',   emoji:'🐡', cssClass:'mackerel',  w:70,  h:26, cost:20,  spawnWeight:25, autoSec:2, autoCoin:1 },
+  rare:     { name:'금붕어',  label:'레어',   emoji:'🐠', cssClass:'goldfish',  w:66,  h:45, cost:30,  spawnWeight:5,  autoSec:1, autoCoin:1 },
+  secret:   { name:'고래상어',label:'시크릿', emoji:'🦈', cssClass:'whaleshark',w:116, h:54, cost:100, spawnWeight:0,  autoSec:5, autoCoin:15},
+};
+const GRADE_COLORS = { common:'#616161', uncommon:'#2e7d32', rare:'#1565c0', secret:'#6a1b9a' };
+
+// JSONBin
+const BIN_KEY      = '$2a$10$lkUqWikTGI9NKt2RW4rjGO40ldu0kZxx3wXZIKPU2WRPKp4fEOcYK';
+const COMMENT_URL  = 'https://api.jsonbin.io/v3/b/6a243243da38895dfe9129a4';
+const GAME_URL     = 'https://api.jsonbin.io/v3/b/6a2434e9f5f4af5e29c2b44a';
+const HEADERS_R    = { 'X-Master-Key': BIN_KEY };
+const HEADERS_W    = { 'Content-Type':'application/json', 'X-Master-Key': BIN_KEY };
+
+// ════════════════════════════════
+//  STATE
+// ════════════════════════════════
+let players  = {}; // { name: { coins, fish:{grade:count}, fishLevels:{grade:level}, messages:[], pendingSpawn:[], pendingGifts:[] } }
+let rooms    = [];
+let comments = [];
+let myName   = null;
+let isAdmin  = false;
+let currentView = 'ocean';
+let quizGrade = null, quizAnswer = 0, quizFishEl = null;
+let autoTimers = [], lobbyInterval = null, pollInterval = null;
+let fromComment = false;
+
+// ════════════════════════════════
+//  JSONBin 함수
+// ════════════════════════════════
+async function loadComments() {
+  try {
+    const d = await (await fetch(COMMENT_URL+'/latest', {headers:HEADERS_R})).json();
+    comments = d.record.comments || [];
+  } catch(e){ comments=[]; }
+}
+async function saveComments() {
+  try { await fetch(COMMENT_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({comments})}); } catch(e){}
+}
+async function loadGameData() {
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    rooms = d.record.rooms || [];
+    const rp = d.record.players || [];
+    rp.forEach(p => {
+      if (!players[p.name]) players[p.name] = {coins:p.coins, fish:p.fish||{}, fishLevels:p.fishLevels||{}, messages:[], pendingSpawn:[], pendingGifts:[]};
+      else { players[p.name].coins=p.coins; players[p.name].fish=p.fish||{}; players[p.name].fishLevels=p.fishLevels||{}; }
+      // 메세지/선물/소환 대기열 병합
+      if (p.messages && p.messages.length) players[p.name].messages.push(...p.messages);
+      if (p.pendingSpawn && p.pendingSpawn.length) players[p.name].pendingSpawn.push(...p.pendingSpawn);
+      if (p.pendingGifts && p.pendingGifts.length) players[p.name].pendingGifts.push(...p.pendingGifts);
+    });
+  } catch(e){}
+}
+async function saveGameData() {
+  try {
+    const rp = Object.entries(players).map(([name,p])=>({
+      name, coins:p.coins, fish:p.fish, fishLevels:p.fishLevels||{},
+      messages:p.messages||[], pendingSpawn:p.pendingSpawn||[], pendingGifts:p.pendingGifts||[]
+    }));
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms, players:rp})});
+  } catch(e){}
+}
+async function clearPlayerQueues(name) {
+  if (!players[name]) return;
+  players[name].messages = [];
+  players[name].pendingSpawn = [];
+  players[name].pendingGifts = [];
+  await saveGameData();
+}
+
+// ════════════════════════════════
+//  화면 전환
+// ════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // 로그인된 상태면 로그아웃 버튼 표시
+  const logoutBtn = document.getElementById('logoutBtn');
+  if ((myName || isAdmin) && id !== 'startScreen') {
+    logoutBtn.classList.add('visible');
+  } else {
+    logoutBtn.classList.remove('visible');
+  }
+}
+function doLogout() {
+  if (lobbyInterval) { clearInterval(lobbyInterval); lobbyInterval=null; }
+  if (pollInterval)  { clearInterval(pollInterval);  pollInterval=null;  }
+  myName=null; isAdmin=false;
+  document.getElementById('logoutBtn').classList.remove('visible');
+  document.getElementById('adminId').value='';
+  document.getElementById('adminPw').value='';
+  showScreen('startScreen');
+  showToast('로그아웃 됐어요!');
+}
+function goMain() {
+  if (lobbyInterval) { clearInterval(lobbyInterval); lobbyInterval=null; }
+  if (pollInterval)  { clearInterval(pollInterval);  pollInterval=null;  }
+  document.getElementById('logoutBtn').classList.remove('visible');
+  showScreen('startScreen');
+}
+
+// ════════════════════════════════
+//  Admin 로그인
+// ════════════════════════════════
+async function tryAdminLogin() {
+  const id = document.getElementById('adminId').value.trim();
+  const pw = document.getElementById('adminPw').value;
+  if (id===ADMIN_ID && pw===ADMIN_PW) {
+    document.getElementById('loginErr').textContent='';
+    isAdmin=true;
+    if (fromComment) {
+      fromComment=false;
+      document.getElementById('commentLoginView').style.display='none';
+      document.getElementById('commentMainView').style.display='block';
+      loadComments().then(()=>renderComments());
+      openModal('commentModal'); showScreen('startScreen');
+    } else {
+      showScreen('adminScreen');
+      // Admin 실시간 갱신 (2초마다 서버에서 직접)
+      await refreshAdminData();
+      setInterval(refreshAdminData, 2000);
+    }
+  } else { document.getElementById('loginErr').textContent='아이디 또는 비밀번호가 틀렸어요!'; }
+}
+
+function dbg(msg) {
+  const box = document.getElementById('debugBox');
+  if (!box) return;
+  const line = document.createElement('div');
+  line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function refreshAdminData() {
+  try {
+    const res = await fetch(GAME_URL+'/latest', {headers:HEADERS_R});
+    const d = await res.json();
+    const rp = d.record.players || [];
+    Object.keys(players).forEach(k => delete players[k]);
+    rp.forEach(p => {
+      players[p.name] = {coins:p.coins, fish:p.fish||{}, fishLevels:p.fishLevels||{}, messages:p.messages||[], pendingSpawn:p.pendingSpawn||[], pendingGifts:p.pendingGifts||[]};
+    });
+    renderAdminScreen();
+  } catch(e) {}
+}
+
+async function pollPlayerData() {
+  if (!myName) return;
+  try {
+    const res = await fetch(GAME_URL+'/latest', {headers:HEADERS_R});
+    const d = await res.json();
+    const rp = d.record.players || [];
+    const me = rp.find(p => p.name === myName);
+    if (!me) return;
+
+    // 강제 로그아웃
+    if (me.forceLogout) {
+      if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+      // 서버에서 플레이어 삭제 (이름 재사용 가능하게)
+      const newPlayers = rp.filter(p => p.name !== myName);
+      await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:newPlayers})});
+      const name = myName;
+      myName = null; isAdmin = false;
+      document.getElementById('logoutBtn').classList.remove('visible');
+      showToast(`🚪 강제 로그아웃됐어요!`);
+      setTimeout(() => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('startScreen').classList.add('active');
+      }, 1500);
+      return;
+    }
+
+    const msgs   = me.messages     || [];
+    const gifts  = me.pendingGifts || [];
+    const spawns = me.pendingSpawn  || [];
+    if (!msgs.length && !gifts.length && !spawns.length) return;
+
+    // 서버에서 큐 비우기
+    const newPlayers = rp.map(p => p.name === myName
+      ? {...p, messages:[], pendingGifts:[], pendingSpawn:[]}
+      : p
+    );
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:newPlayers})});
+
+    // 메세지 처리
+    msgs.forEach(m => showInboxMsg(m));
+
+    // 선물 처리
+    gifts.forEach(g => {
+      if (g.type === 'coin') {
+        players[myName].coins += g.amount;
+        updateCoinDisplay();
+        showGiftNotif(`Admin이 💰 ${g.amount} 코인을 선물했어요!`);
+      } else if (g.type === 'fish') {
+        players[myName].fish[g.grade] = (players[myName].fish[g.grade]||0) + 1;
+        spawnTankFish(g.grade); updateTankEmpty();
+        showGiftNotif(`Admin이 ${GRADES[g.grade].emoji} ${GRADES[g.grade].name}을(를) 선물했어요!`);
+      } else if (g.type === 'levelup') {
+        players[myName].fishLevels = players[myName].fishLevels || {};
+        players[myName].fishLevels[g.grade] = (players[myName].fishLevels[g.grade]||0) + 1;
+        showGiftNotif(`⬆️ ${GRADES[g.grade].name}이 레벨업됐어요!`);
+      }
+    });
+
+    // 소환 처리
+    spawns.forEach(grade => {
+      spawnOceanFish(grade);
+      showToast(`🎣 Admin이 ${GRADES[grade].name}을(를) 소환했어요!`);
+    });
+
+  } catch(e) {}
+}
+
+// ════════════════════════════════
+//  Player 입장
+// ════════════════════════════════
+async function tryPlayerJoin() {
+  const name = document.getElementById('playerNameInput').value.trim();
+  if (!name) { document.getElementById('nameErr').textContent='이름을 입력해주세요!'; return; }
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    if (rp.find(p=>p.name===name)) { document.getElementById('nameErr').textContent='이미 있는 이름이에요!'; return; }
+    const newPlayer = {name, coins:10, fish:{}, fishLevels:{}, messages:[], pendingSpawn:[], pendingGifts:[], forceLogout:false};
+    rp.push(newPlayer);
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    players[name] = {coins:10, fish:{}, fishLevels:{}, messages:[], pendingSpawn:[], pendingGifts:[]};
+    myName = name;
+    document.getElementById('nameErr').textContent='';
+    document.getElementById('playerNameInput').value='';
+    if (fromComment) {
+      fromComment=false;
+      document.getElementById('commentLoginView').style.display='none';
+      document.getElementById('commentMainView').style.display='block';
+      loadComments().then(()=>renderComments()); openModal('commentModal'); showScreen('startScreen');
+    } else { startGame(); }
+  } catch(e) { document.getElementById('nameErr').textContent='오류가 발생했어요. 다시 시도해줘요!'; }
+}
+
+// ════════════════════════════════
+//  Admin 화면
+// ════════════════════════════════
+function renderAdminScreen() { renderPlayers(); }
+async function resetAllPlayers() {
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:[]})});
+    Object.keys(players).forEach(k=>delete players[k]);
+    renderPlayers();
+    showToast('✅ 전체 플레이어 초기화 완료!');
+  } catch(e) { showToast('실패 😢'); }
+}
+async function makeRoom() {
+  const n=rooms.length+1; rooms.push({name:`게임방 ${n}`});
+  await saveGameData(); renderRooms(); showToast(`🏠 게임방 ${n} 생성!`);
+}
+function renderPlayers() {
+  const el=document.getElementById('playerList');
+  const names=Object.keys(players);
+  el.innerHTML = names.length===0 ? '<div style="color:#546e7a;font-size:0.9rem;">아직 플레이어가 없어요</div>'
+    : names.map(n=>`<div class="player-item"><span>🎮 ${n} <span style="color:#ffd54f;font-size:0.8rem;">💰${players[n].coins}</span></span><div class="player-actions"><button class="player-action-btn" onclick="openMsg('${n}')">⌨</button><button class="player-action-btn" onclick="openGift('${n}')">🎁</button><button class="player-action-btn" style="color:#ef9a9a;" onclick="forceLogout('${n}')">🚪</button></div></div>`).join('');
+}
+
+// ════════════════════════════════
+//  카메라(검색)
+// ════════════════════════════════
+async function openCamera() {
+  await loadGameData();
+  document.getElementById('searchInput').value=''; renderSearchResults(); openModal('cameraModal');
+}
+function renderSearchResults() {
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const names=Object.keys(players).filter(n=>n.toLowerCase().includes(q));
+  const el=document.getElementById('searchResults');
+  el.innerHTML = names.length===0 ? '<div style="color:#546e7a;font-size:0.9rem;">결과 없음</div>'
+    : names.map(n=>`<div class="search-result-item"><span>🎮 ${n} <span style="color:#ffd54f;font-size:0.8rem;">💰${players[n].coins}</span></span><div style="display:flex;gap:6px;"><button class="player-action-btn" onclick="closeModal('cameraModal');openMsg('${n}')">⌨</button><button class="player-action-btn" onclick="closeModal('cameraModal');openGift('${n}')">🎁</button><button class="player-action-btn" style="color:#ef9a9a;" onclick="closeModal('cameraModal');forceLogout('${n}')">🚪</button></div></div>`).join('');
+}
+
+// ════════════════════════════════
+//  메세지
+// ════════════════════════════════
+let msgTargetName=null;
+function openMsg(name) { msgTargetName=name; document.getElementById('msgTarget').textContent=name; document.getElementById('msgText').value=''; openModal('msgModal'); }
+async function sendMessage() {
+  const text=document.getElementById('msgText').value.trim();
+  if (!text) return;
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    const idx = rp.findIndex(p=>p.name===msgTargetName);
+    if (idx===-1) { showToast('플레이어가 없어요'); return; }
+    rp[idx].messages = rp[idx].messages || [];
+    rp[idx].messages.push({from:'Admin', text});
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    showToast(`📨 ${msgTargetName}에게 메세지 전송!`); closeModal('msgModal');
+  } catch(e) { showToast('전송 실패 😢'); }
+}
+
+// ════════════════════════════════
+//  선물
+// ════════════════════════════════
+let giftTargetName=null;
+function openGift(name) { giftTargetName=name; document.getElementById('giftTarget').textContent=name; document.getElementById('giftCoinAmount').value=''; openModal('giftModal'); }
+async function sendGiftCoin() {
+  const amt=parseInt(document.getElementById('giftCoinAmount').value);
+  if (!amt||amt<1) { showToast('코인 수를 입력하세요'); return; }
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    const idx = rp.findIndex(p=>p.name===giftTargetName);
+    if (idx===-1) { showToast('플레이어가 없어요'); return; }
+    rp[idx].pendingGifts = rp[idx].pendingGifts || [];
+    rp[idx].pendingGifts.push({type:'coin', amount:amt});
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    showToast(`🎁 ${giftTargetName}에게 ${amt}코인 선물!`); closeModal('giftModal'); renderPlayers();
+  } catch(e) { showToast('선물 실패 😢'); }
+}
+async function sendGiftFish(grade) {
+  const g=GRADES[grade];
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    const idx = rp.findIndex(p=>p.name===giftTargetName);
+    if (idx===-1) { showToast('플레이어가 없어요'); return; }
+    rp[idx].pendingGifts = rp[idx].pendingGifts || [];
+    rp[idx].pendingGifts.push({type:'fish', grade});
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    showToast(`🎁 ${giftTargetName}에게 ${g.name} 선물!`); closeModal('giftModal');
+  } catch(e) { showToast('선물 실패 😢'); }
+}
+async function giftLevelUp(grade) {
+  const g=GRADES[grade];
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    const idx = rp.findIndex(p=>p.name===giftTargetName);
+    if (idx===-1) { showToast('플레이어가 없어요'); return; }
+    rp[idx].pendingGifts = rp[idx].pendingGifts || [];
+    rp[idx].pendingGifts.push({type:'levelup', grade});
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    showToast(`⬆️ ${giftTargetName}의 ${g.name} 레벨업!`); closeModal('giftModal');
+  } catch(e) { showToast('레벨업 실패 😢'); }
+}
+
+// ════════════════════════════════
+//  Admin 소환
+// ════════════════════════════════
+async function forceLogout(name) {
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    const idx = rp.findIndex(p=>p.name===name);
+    if (idx===-1) { showToast('플레이어가 없어요'); return; }
+    rp[idx].forceLogout = true;
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    showToast(`🚪 ${name} 강제 로그아웃!`);
+    renderPlayers();
+  } catch(e) { showToast('실패 😢'); }
+}
+
+async function adminSummon(grade) {
+  const name=document.getElementById('summonPlayerName').value.trim();
+  if (!name) { showToast('플레이어 이름을 입력해주세요!'); return; }
+  try {
+    const d = await (await fetch(GAME_URL+'/latest', {headers:HEADERS_R})).json();
+    const rp = d.record.players || [];
+    const idx = rp.findIndex(p=>p.name===name);
+    if (idx===-1) { showToast('그 이름의 플레이어가 없어요!'); return; }
+    rp[idx].pendingSpawn = rp[idx].pendingSpawn || [];
+    rp[idx].pendingSpawn.push(grade);
+    await fetch(GAME_URL, {method:'PUT', headers:HEADERS_W, body:JSON.stringify({rooms:d.record.rooms||[], players:rp})});
+    showToast(`🎣 ${name}의 바다에 ${GRADES[grade].name} 소환!`);
+    closeModal('summonModal'); document.getElementById('summonPlayerName').value='';
+  } catch(e) { showToast('소환 실패 😢'); }
+}
+
+// ════════════════════════════════
+//  로비
+// ════════════════════════════════
+// ════════════════════════════════
+//  게임 시작
+// ════════════════════════════════
+function startGame() {
+  if (lobbyInterval){clearInterval(lobbyInterval);lobbyInterval=null;}
+  showScreen('gameScreen');
+  document.getElementById('playerNameLabel').textContent=`🎮 ${myName}`;
+  updateCoinDisplay(); switchView('ocean'); setupOcean(); setupTank(); startAutoCoins();
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval=setInterval(pollPlayerData, 2000);
+}
+
+// ════════════════════════════════
+//  플레이어 폴링 (선물/메세지/소환 수신)
+// ════════════════════════════════
+// ════════════════════════════════
+//  코인/뷰
+// ════════════════════════════════
+function updateCoinDisplay() {
+  document.getElementById('coinDisplay').textContent=`💰 ${players[myName].coins} 코인`;
+}
+function switchView(v) {
+  currentView=v;
+  document.getElementById('oceanView').style.display=v==='ocean'?'block':'none';
+  document.getElementById('tankView').style.display=v==='tank'?'block':'none';
+  document.getElementById('btnOcean').classList.toggle('active',v==='ocean');
+  document.getElementById('btnTank').classList.toggle('active',v==='tank');
+}
+
+// ════════════════════════════════
+//  상점
+// ════════════════════════════════
+function openShop() {
+  renderShop(); openModal('shopModal');
+}
+function renderShop() {
+  const el=document.getElementById('shopList');
+  const fish=players[myName].fish||{};
+  const levels=players[myName].fishLevels||{};
+  const owned=Object.entries(fish).filter(([,cnt])=>cnt>0);
+  if (owned.length===0) { el.innerHTML='<div class="shop-no-fish">물고기가 없어요!<br>바다에서 잡아오세요 🎣</div>'; return; }
+  el.innerHTML=owned.map(([grade,cnt])=>{
+    const g=GRADES[grade]; const lv=levels[grade]||0;
+    const cost=50+(lv*30); const bonus=lv*2;
+    return `<div class="shop-item-card">
+      <div class="shop-item-top">
+        <span class="shop-item-name">${g.emoji} ${g.name} (${cnt}마리)</span>
+        <span class="shop-item-level">Lv.${lv} (+${g.autoCoin+bonus}코인)</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:#78909c;font-size:0.82rem;">레벨업 비용: 💰${cost}</span>
+        <button class="shop-level-btn" ${players[myName].coins<cost?'disabled':''} onclick="levelUpFish('${grade}')">⬆️ 레벨업</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function levelUpFish(grade) {
+  const levels=players[myName].fishLevels||{};
+  const lv=levels[grade]||0; const cost=50+(lv*30);
+  if (players[myName].coins<cost) { showToast('코인이 부족해요!'); return; }
+  players[myName].coins-=cost;
+  players[myName].fishLevels=players[myName].fishLevels||{};
+  players[myName].fishLevels[grade]=(players[myName].fishLevels[grade]||0)+1;
+  updateCoinDisplay(); await saveGameData();
+  showToast(`⬆️ ${GRADES[grade].name} 레벨업! (Lv.${players[myName].fishLevels[grade]})`);
+  renderShop();
+}
+
+// ════════════════════════════════
+//  바다 설정
+// ════════════════════════════════
+function setupOcean() {
+  const ocean=document.getElementById('oceanView');
+  [5,18,35,52,68,82,94].forEach(p=>{ const c=document.createElement('div'); c.className='ocean-coral'; c.style.cssText=`left:${p}%;height:${20+Math.random()*30}px;animation-delay:${Math.random()*3}s`; ocean.appendChild(c); });
+  for(let i=0;i<12;i++){ const b=document.createElement('div'); b.className='ocean-bubble'; const s=3+Math.random()*8; b.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*95}%;animation-duration:${4+Math.random()*6}s;animation-delay:${Math.random()*8}s`; ocean.appendChild(b); }
+  spawnOceanFishLoop();
+}
+function randomGrade() {
+  const entries=Object.entries(GRADES).filter(([,g])=>g.spawnWeight>0);
+  const total=entries.reduce((s,[,g])=>s+g.spawnWeight,0);
+  let r=Math.random()*total;
+  for(const [k,g] of entries){ r-=g.spawnWeight; if(r<=0) return k; }
+  return 'common';
+}
+function spawnOceanFishLoop() { spawnOceanFish(); setTimeout(spawnOceanFishLoop, 2500+Math.random()*2500); }
+function spawnOceanFish(forcedGrade) {
+  const ocean=document.getElementById('oceanView');
+  const grade=forcedGrade||randomGrade(); const cfg=GRADES[grade];
+  const wrapper=document.createElement('div'); wrapper.className='ocean-fish'; wrapper.style.position='absolute'; wrapper.style.padding='12px'; wrapper.style.cursor='pointer';
+  const badge=document.createElement('div'); badge.className=`grade-badge badge-${grade}`; badge.textContent=cfg.label; badge.style.transform='translateX(-50%)'; wrapper.appendChild(badge);
+  const inner=document.createElement('div'); inner.innerHTML=fishInnerHTML(grade); wrapper.appendChild(inner);
+  const ow=ocean.clientWidth||360; const oh=ocean.clientHeight||340;
+  wrapper.style.top=(20+Math.random()*(oh-cfg.h-36))+'px';
+  ocean.appendChild(wrapper);
+  wrapper.addEventListener('click',()=>openQuiz(grade,wrapper));
+  animateOceanFish(wrapper,cfg,ow,oh);
+  setTimeout(()=>{ if(wrapper.parentNode) wrapper.remove(); }, 8000+Math.random()*4000);
+}
+function animateOceanFish(el,cfg,ow,oh) {
+  const speed=0.04+Math.random()*0.05; let dir=Math.random()>0.5?1:-1; let pos=dir===1?-cfg.w:ow;
+  let vPos=parseFloat(el.style.top); let vDir=Math.random()>0.5?1:-1; const vSpd=0.005+Math.random()*0.008;
+  const topMin=20, topMax=oh-cfg.h-36; let last=null;
+  el.style.transform=dir===-1?'scaleX(-1)':'scaleX(1)';
+  function frame(ts){ if(!el.parentNode) return; if(!last) last=ts; const dt=ts-last; last=ts;
+    pos+=dir*speed*dt; if(dir===1&&pos>ow+4){pos=ow;dir=-1;el.style.transform='scaleX(-1)';}
+    if(dir===-1&&pos<-cfg.w-4){pos=-cfg.w;dir=1;el.style.transform='scaleX(1)';}
+    vPos+=vDir*vSpd*dt; if(vPos<topMin){vPos=topMin;vDir=1;} if(vPos>topMax){vPos=topMax;vDir=-1;}
+    el.style.left=pos+'px'; el.style.top=vPos+'px'; requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+}
+
+// ════════════════════════════════
+//  퀴즈
+// ════════════════════════════════
+function openQuiz(grade, fishEl) {
+  quizGrade=grade; quizFishEl=fishEl; const g=GRADES[grade]; const p=makeProblem(grade); quizAnswer=p.answer;
+  const gb=document.getElementById('quizGrade'); gb.textContent=g.label; gb.style.background=GRADE_COLORS[grade]; gb.style.color=grade==='secret'?'#ffd54f':'white';
+  document.getElementById('quizFishEmoji').textContent=g.emoji;
+  document.getElementById('quizFishName').textContent=g.name;
+  document.getElementById('quizCost').textContent=`잡으려면 💰 ${g.cost} 코인 필요`;
+  document.getElementById('quizProblem').textContent=p.text+' = ?';
+  document.getElementById('quizInput').value='';
+  document.getElementById('quizFeedback').textContent=''; document.getElementById('quizFeedback').className='quiz-feedback';
+  document.getElementById('quizOverlay').classList.add('open'); document.getElementById('quizInput').focus();
+}
+function closeQuiz() { document.getElementById('quizOverlay').classList.remove('open'); quizFishEl=null; }
+async function submitQuiz() {
+  const val=parseInt(document.getElementById('quizInput').value); const fb=document.getElementById('quizFeedback'); const g=GRADES[quizGrade];
+  if(isNaN(val)) return;
+  if(val!==quizAnswer){ fb.textContent=`❌ 틀렸어요! 정답은 ${quizAnswer}이에요 😢`; fb.className='quiz-feedback err'; setTimeout(closeQuiz,1800); return; }
+  if(players[myName].coins<g.cost){ fb.textContent=`💸 코인 부족! (필요:${g.cost}, 보유:${players[myName].coins})`; fb.className='quiz-feedback err'; return; }
+  players[myName].coins-=g.cost;
+  players[myName].fish[quizGrade]=(players[myName].fish[quizGrade]||0)+1;
+  updateCoinDisplay(); spawnTankFish(quizGrade); updateTankEmpty();
+  await saveGameData();
+  if(quizFishEl&&quizFishEl.parentNode) quizFishEl.remove();
+  fb.textContent=`🎉 ${g.name} 잡았어요!`; fb.className='quiz-feedback ok'; setTimeout(closeQuiz,1000);
+}
+
+// ════════════════════════════════
+//  수족관
+// ════════════════════════════════
+function setupTank() {
+  const tank=document.getElementById('tankView');
+  [5,18,32,48,64,78,91].forEach(p=>{ const sw=document.createElement('div'); sw.className='tank-seaweed'; sw.style.cssText=`left:${p}%;height:${28+Math.random()*30}px;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*2}s`; tank.appendChild(sw); });
+  for(let i=0;i<10;i++){ const b=document.createElement('div'); b.className='tank-bubble'; const s=4+Math.random()*7; b.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*95}%;animation-duration:${3+Math.random()*5}s;animation-delay:${Math.random()*6}s`; tank.appendChild(b); }
+}
+function spawnTankFish(grade) {
+  const tank=document.getElementById('tankView'); const cfg=GRADES[grade];
+  const el=document.createElement('div'); el.className='fish'; el.innerHTML=fishInnerHTML(grade); el.style.position='absolute';
+  const tw=tank.clientWidth||360; const th=tank.clientHeight||300;
+  el.style.top=(12+Math.random()*(th-cfg.h-34))+'px'; tank.appendChild(el); animateTankFish(el,cfg,tw,th);
+}
+function animateTankFish(el,cfg,tw,th) {
+  const speed=0.03+Math.random()*0.05; let dir=Math.random()>0.5?1:-1; let pos=dir===1?-cfg.w:tw;
+  let vPos=parseFloat(el.style.top); let vDir=Math.random()>0.5?1:-1; const vSpd=0.004+Math.random()*0.006; let last=null;
+  el.style.transform=dir===-1?'scaleX(-1)':'scaleX(1)';
+  function frame(ts){ if(!el.parentNode) return; if(!last) last=ts; const dt=ts-last; last=ts;
+    pos+=dir*speed*dt; if(dir===1&&pos>tw+4){pos=tw;dir=-1;el.style.transform='scaleX(-1)';}
+    if(dir===-1&&pos<-cfg.w-4){pos=-cfg.w;dir=1;el.style.transform='scaleX(1)';}
+    vPos+=vDir*vSpd*dt; if(vPos<12){vPos=12;vDir=1;} if(vPos>th-cfg.h-34){vPos=th-cfg.h-34;vDir=-1;}
+    el.style.left=pos+'px'; el.style.top=vPos+'px'; requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
+}
+function updateTankEmpty() {
+  const total=Object.values(players[myName].fish).reduce((s,v)=>s+v,0);
+  document.getElementById('tankEmpty').style.display=total>0?'none':'block';
+}
+
+// ════════════════════════════════
+//  자동 코인
+// ════════════════════════════════
+function startAutoCoins() {
+  Object.entries(GRADES).forEach(([grade,g])=>{
+    const interval=setInterval(()=>{
+      const cnt=players[myName]?.fish?.[grade]||0; if(cnt===0) return;
+      const lv=(players[myName]?.fishLevels?.[grade])||0;
+      const earned=cnt*(g.autoCoin+(lv*2));
+      players[myName].coins+=earned; updateCoinDisplay(); showCoinPop(`+${earned}💰`);
+    }, g.autoSec*1000);
+    autoTimers.push(interval);
+  });
+}
+function showCoinPop(text) {
+  const view=currentView==='ocean'?document.getElementById('oceanView'):document.getElementById('tankView');
+  const pop=document.createElement('div'); pop.className='coin-pop'; pop.textContent=text;
+  pop.style.left=(20+Math.random()*60)+'%'; pop.style.bottom=(30+Math.random()*40)+'%';
+  view.appendChild(pop); setTimeout(()=>pop.remove(),1200);
+}
+
+// ════════════════════════════════
+//  물고기 HTML
+// ════════════════════════════════
+function fishInnerHTML(grade) {
+  const g=GRADES[grade].cssClass;
+  if(g==='anchovy') return `<div class="fish-anchovy"><div class="body"><div class="tail"></div><div class="eye"></div></div></div>`;
+  if(g==='mackerel') return `<div class="fish-mackerel"><div class="body"><div class="stripe"></div><div class="tail"></div><div class="eye"></div></div></div>`;
+  return `<div class="fish-${g}"><div class="body"><div class="tail"></div><div class="fin"></div><div class="eye"></div></div></div>`;
+}
+
+// ════════════════════════════════
+//  문제 생성
+// ════════════════════════════════
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+function makeProblem(grade) { if(grade==='common') return makeCommon(); if(grade==='uncommon') return makeUncommon(); if(grade==='rare') return makeRare(); return makeSecret(); }
+function makeCommon() { for(let i=0;i<200;i++){ const a=rnd(1,50),b=rnd(1,50),c=rnd(1,30),r=a+b-c; if(r>=1&&r<=100) return {text:`${a} + ${b} - ${c}`,answer:r}; } return {text:'10 + 5 - 3',answer:12}; }
+function makeUncommon() { for(let i=0;i<200;i++){ if(rnd(0,1)===0){const a=rnd(2,9),b=rnd(2,9),c=rnd(1,20),r=a*b+c; if(r<=100) return {text:`${a} × ${b} + ${c}`,answer:r};}else{const a=rnd(1,20),b=rnd(2,9),c=rnd(2,9),r=a+b*c; if(r<=100) return {text:`${a} + ${b} × ${c}`,answer:r};} } return {text:'3 × 4 + 2',answer:14}; }
+function makeRare() { for(let i=0;i<200;i++){ const a=rnd(1,10),b=rnd(1,10),c=rnd(2,6),d=rnd(1,20),r=(a+b)*c-d; if(r>=1&&r<=100) return {text:`(${a} + ${b}) × ${c} - ${d}`,answer:r}; } return {text:'(5 + 3) × 4 - 6',answer:26}; }
+function makeSecret() { for(let i=0;i<400;i++){ const b=rnd(2,6),a=b*rnd(1,8),c=rnd(1,6),e=rnd(2,6),d=rnd(e+1,e+8); const r=(a/b+c)*(d-e); if(Number.isInteger(r)&&r>=1&&r<=100) return {text:`(${a} ÷ ${b} + ${c}) × (${d} - ${e})`,answer:r}; } return {text:'(12 ÷ 4 + 2) × (8 - 3)',answer:25}; }
+
+// ════════════════════════════════
+//  메세지 수신함
+// ════════════════════════════════
+function showInboxMsg(msg) {
+  const inbox=document.getElementById('msgInbox'); const card=document.createElement('div'); card.className='msg-card';
+  card.innerHTML=`<div class="msg-from">📨 ${msg.from}에서 온 메세지</div><div class="msg-body">${msg.text}</div><div class="msg-card-btns"><button class="msg-close-btn" onclick="this.closest('.msg-card').remove()">닫기</button><button class="msg-reply-btn" onclick="toggleReply(this)">답장</button></div><div class="msg-reply-area"><textarea class="msg-reply-input" placeholder="답장 내용..."></textarea><button class="msg-reply-send" onclick="sendReply(this,'${msg.from}')">전송</button></div>`;
+  inbox.appendChild(card);
+}
+function toggleReply(btn) { const a=btn.closest('.msg-card').querySelector('.msg-reply-area'); a.style.display=a.style.display==='block'?'none':'block'; }
+function sendReply(btn,to) { const text=btn.previousElementSibling.value.trim(); if(!text) return; showToast(`💬 ${to}에게 답장 전송!`); btn.closest('.msg-card').remove(); }
+function showGiftNotif(text) {
+  const inbox=document.getElementById('msgInbox'); const card=document.createElement('div'); card.className='gift-notif';
+  card.innerHTML=`<div class="gift-notif-title">🎁 선물 도착!</div><div class="gift-notif-body">${text}</div><button class="gift-notif-close" onclick="this.closest('.gift-notif').remove()">확인</button>`;
+  inbox.appendChild(card);
+}
+
+// ════════════════════════════════
+//  댓글
+// ════════════════════════════════
+window.openCommentModal = async function() {
+  await loadComments();
+  if(myName||isAdmin){ document.getElementById('commentLoginView').style.display='none'; document.getElementById('commentMainView').style.display='block'; renderComments(); }
+  else { document.getElementById('commentLoginView').style.display='block'; document.getElementById('commentMainView').style.display='none'; }
+  openModal('commentModal');
+}
+function commentGoAdmin() { fromComment=true; closeModal('commentModal'); showScreen('loginScreen'); }
+function commentGoPlayer() { fromComment=true; closeModal('commentModal'); showScreen('nameScreen'); }
+function renderComments() {
+  const list=document.getElementById('commentList');
+  if(comments.length===0){ list.innerHTML='<div class="comment-no">아직 댓글이 없어요! 첫 댓글을 남겨봐요 😊</div>'; return; }
+  list.innerHTML=comments.map((c,i)=>`<div class="comment-item"><div class="comment-author">🎮 ${c.author}</div><div class="comment-text">${c.text}</div><button class="comment-delete ${isAdmin?'visible':''}" onclick="deleteComment(${i})">🗑️</button></div>`).join('');
+}
+function postComment() {
+  const input=document.getElementById('commentInput'); const text=input.value.trim();
+  if(!text) return; if(!myName&&!isAdmin){ showToast('로그인 후 댓글을 쓸 수 있어요!'); return; }
+  comments.push({author:myName||'Admin',text}); saveComments(); input.value=''; renderComments();
+}
+function deleteComment(idx) { comments.splice(idx,1); saveComments(); renderComments(); }
+
+// ════════════════════════════════
+//  모달/토스트
+// ════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+let _tt=null;
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),2000); }
+
+// ════════════════════════════════
+//  QR / URL 파라미터
+// ════════════════════════════════
+if(new URLSearchParams(window.location.search).get('mode')==='player') showScreen('nameScreen');
+
+// QR 자동 생성
+const script=document.createElement('script');
+script.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+script.onload=()=>{
+  const url=NETLIFY_URL+'?mode=player';
+  new QRCode(document.getElementById('qrInner'),{text:url,width:150,height:150,colorDark:'#90caf9',colorLight:'#0d1b2a'});
+};
+document.head.appendChild(script);
+
+document.getElementById('commentBtn').addEventListener('click', ()=>window.openCommentModal());
+</script>
+</body>
+</html>
